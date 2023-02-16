@@ -1,9 +1,12 @@
 import React from "react";
 import useWebSocket, { ReadyState } from "react-use-websocket";
 
-const funnelMetrics = (Mbps: number) => {};
+const funnelMetrics = (socketUrl: string, Mbps: number) => {
+  console.log(socketUrl);
+  console.log(Mbps);
+};
 
-const calculateSpeed = () => {
+const calculateSpeed = (socketUrl: string) => {
   const xhr = new XMLHttpRequest();
   const url = "https://random.imagecdn.app/500/500";
   let startTime: any, endTime;
@@ -19,7 +22,7 @@ const calculateSpeed = () => {
         const downloadTime = endTime - startTime;
 
         const Mbps = (fileSize * 8) / (downloadTime / 1000) / 1000000;
-        funnelMetrics(Mbps);
+        funnelMetrics(socketUrl, Mbps);
       }
     }
   };
@@ -28,10 +31,17 @@ const calculateSpeed = () => {
   xhr.send();
 };
 
-export const MetricProvider = (): JSX.Element => {
-  calculateSpeed();
+export const MetricProvider = ({
+  socketUrl,
+}: {
+  socketUrl: string;
+}): JSX.Element => {
+  calculateSpeed(socketUrl);
+
+  const { sendMessage } = useWebSocket(socketUrl, {
+    onOpen: () => console.log("opened connection"),
+  });
+  sendMessage("message");
 
   return <div />;
 };
-
-//

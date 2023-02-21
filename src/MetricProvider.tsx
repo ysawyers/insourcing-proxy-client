@@ -1,14 +1,16 @@
 import React from "react";
-import useWebSocket, { ReadyState } from "react-use-websocket";
+// import useWebSocket from "react-use-websocket";
+import { useCookies } from "react-cookie";
 
-const funnelMetrics = (socketUrl: string, Mbps: number) => {
-  console.log(socketUrl);
-  console.log(Mbps);
-};
+// NOTE: This is in ms
+const pingInterval = 5000;
 
-const calculateSpeed = (socketUrl: string) => {
+let totalSum = 0;
+let entries = 0;
+
+const calculateSpeed = (setCookie: any) => {
   const xhr = new XMLHttpRequest();
-  const url = "https://random.imagecdn.app/500/500";
+  const url = "https://random.imagecdn.app/1000/1000";
   let startTime: any, endTime;
 
   xhr.open("GET", url, true);
@@ -22,7 +24,12 @@ const calculateSpeed = (socketUrl: string) => {
         const downloadTime = endTime - startTime;
 
         const Mbps = (fileSize * 8) / (downloadTime / 1000) / 1000000;
-        funnelMetrics(socketUrl, Mbps);
+        totalSum += Mbps;
+        entries += 1;
+
+        console.log(totalSum / entries);
+
+        setCookie("avgLatency", totalSum / entries, { path: "/" });
       }
     }
   };
@@ -36,12 +43,17 @@ export const MetricProvider = ({
 }: {
   socketUrl: string;
 }): JSX.Element => {
-  calculateSpeed(socketUrl);
+  const [cookies, setCookie] = useCookies(["avgLatency"]);
 
-  const { sendMessage } = useWebSocket(socketUrl, {
-    onOpen: () => console.log("opened connection"),
-  });
-  sendMessage("message");
+  // const { sendMessage } = useWebSocket(socketUrl, {
+  //   onOpen: () => console.log("opened connection"),
+  // });
+
+  React.useEffect(() => {
+    setInterval(() => {
+      calculateSpeed(setCookie);
+    }, pingInterval);
+  }, []);
 
   return <div />;
 };

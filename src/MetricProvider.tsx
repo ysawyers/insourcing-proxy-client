@@ -1,9 +1,9 @@
 import React from "react";
-// import useWebSocket from "react-use-websocket";
+import useWebSocket from "react-use-websocket";
 import { useCookies } from "react-cookie";
 
 // NOTE: This is in ms
-const pingInterval = 5000;
+const pingInterval = 1000;
 
 let totalSum = 0;
 let entries = 0;
@@ -27,8 +27,6 @@ const calculateSpeed = (setCookie: any) => {
         totalSum += Mbps;
         entries += 1;
 
-        console.log(totalSum / entries);
-
         setCookie("avgLatency", totalSum / entries, { path: "/" });
       }
     }
@@ -43,17 +41,28 @@ export const MetricProvider = ({
 }: {
   socketUrl: string;
 }): JSX.Element => {
-  const [cookies, setCookie] = useCookies(["avgLatency"]);
+  const [cookies, setCookie] = useCookies(["avgLatency", "insourceBranch"]);
 
-  // const { sendMessage } = useWebSocket(socketUrl, {
-  //   onOpen: () => console.log("opened connection"),
-  // });
+  const { sendMessage } = useWebSocket(socketUrl, {
+    onOpen: () => console.log("opened connection"),
+    onMessage: (event) => {
+      console.log(event.data);
+
+      setCookie("insourceBranch", "null", { path: "/" });
+    },
+  });
 
   React.useEffect(() => {
     setInterval(() => {
       calculateSpeed(setCookie);
     }, pingInterval);
   }, []);
+
+  React.useEffect(() => {
+    if (cookies.insourceBranch !== "null") {
+      sendMessage(cookies.insourceBranch);
+    }
+  }, [cookies]);
 
   return <div />;
 };

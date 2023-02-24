@@ -3,37 +3,33 @@ import useWebSocket from "react-use-websocket";
 import { useCookies } from "react-cookie";
 
 // NOTE: This is in ms
-const pingInterval = 1000;
+const pingInterval = 2500;
 
 let totalSum = 0;
 let entries = 0;
 
 const calculateSpeed = (setCookie: any) => {
-  const xhr = new XMLHttpRequest();
-  const url = "https://random.imagecdn.app/1000/1000";
-  let startTime: any, endTime;
+  let image = new Image();
+  let startTime = new Date().getTime();
 
-  xhr.open("GET", url, true);
-  xhr.onreadystatechange = function () {
-    if (this.readyState === 4 && this.status === 200) {
-      endTime = new Date().getTime();
+  image.src = "https://random.imagecdn.app/500/500?" + Date.now();
+  image.onload = function () {
+    let duration = new Date().getTime() - startTime;
+    let bitsLoaded = image.src.length * 8;
 
-      const responseHeader = xhr.getResponseHeader("content-length");
-      if (responseHeader !== null) {
-        const fileSize = parseInt(responseHeader);
-        const downloadTime = endTime - startTime;
+    const downloadSpeedKbps = (bitsLoaded * 8 * 1000) / duration;
+    const downloadSpeedMbps = downloadSpeedKbps / 1000;
 
-        const Mbps = (fileSize * 8) / (downloadTime / 1000) / 1000000;
-        totalSum += Mbps;
-        entries += 1;
+    totalSum += parseFloat(downloadSpeedMbps.toFixed(2));
+    entries += 1;
 
-        setCookie("avgLatency", totalSum / entries, { path: "/" });
-      }
+    setCookie("avgLatency", totalSum / entries, { path: "/" });
+
+    if (entries > 12) {
+      entries = 0;
+      totalSum = 0;
     }
   };
-
-  startTime = new Date().getTime();
-  xhr.send();
 };
 
 export const MetricProvider = ({
@@ -62,7 +58,7 @@ export const MetricProvider = ({
     if (cookies.insourceBranch !== "null") {
       sendMessage(cookies.insourceBranch);
     }
-  }, [cookies]);
+  }, [cookies["insourceBranch"]]);
 
   return <div />;
 };
